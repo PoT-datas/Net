@@ -34,4 +34,6 @@ dependencies {
     //implementation 'dev.dworks.libs:volleyplus:+'
     implementation 'com.android.volley:volley:1.1.0'
     implementation 'org.jbundle.util.osgi.wrapped:org.jbundle.util.osgi.wrapped.org.apache.http.client:4.1.2'
+
+    ///---implementation 'com.github.PoT-datas:gl:1.0.3'
 }
