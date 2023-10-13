@@ -2,9 +2,6 @@ package api.pot.net.streaming;
 
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.view.View;
@@ -16,12 +13,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import api.pot.system.Log;
+import api.pot.system.XApp;
 
 public class Xtreamer {
 
@@ -138,6 +136,7 @@ public class Xtreamer {
 
         @Override
         protected String doInBackground(String... f_url) {
+
             int count;
             //checkDir(downloader_temp_dir_path);
             try {
@@ -147,10 +146,14 @@ public class Xtreamer {
 
                 URL url = new URL(url_);
                 URLConnection connection = url.openConnection();
+                ///----
+                connection.setConnectTimeout(3000);
+                connection.setReadTimeout(3000);
+                ///----
                 connection.connect();
 
                 // getting file length
-                int lengthOfFile = connection.getContentLength();
+                final int lengthOfFile = connection.getContentLength();
 
                 // input stream to read file - with 8k buffer
                 InputStream input = new BufferedInputStream(url.openStream(), 8192);
@@ -161,8 +164,9 @@ public class Xtreamer {
                 //check dir
                 checkDir(temp_file.getParent());
 
+                /**
                 //check files
-                //if(temp_file.exists()) temp_file.delete();
+                if(temp_file.exists()) temp_file.delete();*/
 
                 OutputStream temp_output;
                 if(temp_file.exists())
@@ -175,7 +179,7 @@ public class Xtreamer {
                 long total = 0;
 
                 //passer sur les elts deja telecharger
-                long skip = temp_file.exists()?temp_file.length():0;
+                long skip = temp_file.exists()&&temp_file.length()<lengthOfFile?temp_file.length():0;
                 input.skip(skip);
 
                 //init progression
@@ -183,24 +187,32 @@ public class Xtreamer {
 
                 final long time = System.currentTimeMillis();
 
-                if(listener_!=null) listener_.onLoadingStart();
+                if(listener_!=null) listener_.onLoadingStart(lengthOfFile);
 
-                while ((count = input.read(data)) != -1) {
-                    total += count;
+                if(temp_file.length()<lengthOfFile){
+                    while ((count = input.read(data)) != -1) {
+                        total += count;
 
-                    temp_output.write(data, 0, count);
+                        temp_output.write(data, 0, count);
 
-                    if(listener_!=null) listener_.onLoadingProceed(Float.valueOf(skip + total) / lengthOfFile);
+                        if(listener_!=null) listener_.onLoadingProceed(Float.valueOf(skip + total) / lengthOfFile);
 
-                    //downloading_notifyer.notifyer(Float.valueOf(skip + total) / lengthOfFile);
+                        //downloading_notifyer.notifyer(Float.valueOf(skip + total) / lengthOfFile);
 
-                    /***modelImage.setDownloading(skip + total);*/
+                        /***modelImage.setDownloading(skip + total);*/
 
-                    /**if(breaker!=null && breaker.size()!=0){
-                        if(breaker.remove(str_url))
-                            return "break";
-                    }*/
+                        /**if(breaker!=null && breaker.size()!=0){
+                         if(breaker.remove(str_url))
+                         return "break";
+                         }*/
+                    }
+                }else {
+                    if(listener_!=null) listener_.onLoadingProceed(1);
                 }
+
+                /**else{
+
+                }*/
 
                 /**Downloader.log("delta time(s) :"+(Float.valueOf(System.currentTimeMillis()-time)/1000)+"  "+str_url);*/
 
@@ -231,10 +243,13 @@ public class Xtreamer {
 
                 return "done";
 
-            } catch (Exception e) {}
+            } catch (final Exception e) {
+                if(listener_!=null) listener_.onLoadingError(e.getMessage(), file_);
+            }
 
             return "error";
         }
+
 
         @Override
         protected void onPostExecute(String message) {
@@ -282,6 +297,15 @@ public class Xtreamer {
             isDownloading = false;
         }
 
+    }
+
+    public static void log(final String message) {
+        XApp.run(new Runnable() {
+            @Override
+            public void run() {
+                Log.j(context_, "|"+message);
+            }
+        });
     }
 
     public static boolean checkDir(String path) {

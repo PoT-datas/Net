@@ -5,7 +5,7 @@ import java.io.File;
 public interface XtreamerListener {
 
     public void onLoadingReady();
-    public void onLoadingStart();
+    public void onLoadingStart(int length);
     public void onLoadingProceed(float evolution);
     public void onLoadingEnd(String destination);
     public void onLoadingEnd(File file);

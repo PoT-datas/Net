@@ -9,7 +9,7 @@ public class XtreamerCallback implements XtreamerListener{
     }
 
     @Override
-    public void onLoadingStart() {
+    public void onLoadingStart(int length) {
 
     }
 
